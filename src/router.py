@@ -1,5 +1,19 @@
+#!/usr/bin/python3
+
 import argparse
 import socket
+import asyncio
+import json
+
+async def send_update(sckt, routing_table, local_address, routing_table):
+    for pair in routing_table:
+        dest_address = pair[0]
+        distances = {}
+        message = {'type': 'update', 
+        'source': local_address,
+        'destination': dest_address,
+        'distances': distances
+        }
 
 def main():
     parser = argparse.ArgumentParser()
