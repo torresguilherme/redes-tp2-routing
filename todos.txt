@@ -1,8 +1,13 @@
 # TODOS
+- executar startup
 - uma co-rotina com um loop infinito que atualiza os pesos a cada period segundos:
 	- manda json updates
 	- recebe atualizaçoes
+	- implementar split horizon
+	- implementar balanceamento de carga
 - uma linha de comando que recebe comandos do usuario:
 	- add <ip> <weight>
 	- remove <ip>
-	- atualiza a 
+	- trace <ip>:
+		- fazer funcao que passa a mensagem de trace pra frente
+		- mandar uma data quando chegar no destino final

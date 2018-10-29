@@ -3,15 +3,20 @@ import socket
 import asyncio
 import json
 
-async def send_update(sckt, routing_table, local_address, routing_table):
-    for pair in routing_table:
-        dest_address = pair[0]
-        distances = {}
-        message = {'type': 'update', 
-        'source': local_address,
-        'destination': dest_address,
-        'distances': distances
-        }
+# tabela de roteamento
+routing_table = []
+
+async def send_updates(sckt, local_address, period):
+    while True:
+        for pair in routing_table:
+            dest_address = pair[0]
+            distances = {}
+            message = {'type': 'update', 
+            'source': local_address,
+            'destination': dest_address,
+            'distances': distances
+            }
+        await asyncio.sleep(period)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -24,7 +29,7 @@ def main():
     sckt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sckt.bind((args.addr, 55151))
 
-    # tabela de roteamento
-    routing_table = []
+    # faz os updates
+    update_task = asyncio.create_task(send_updates(sckt, args.addr, args.period))
 
 main()
