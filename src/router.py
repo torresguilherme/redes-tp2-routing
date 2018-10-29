@@ -9,6 +9,16 @@ routing_table = []
 distances_table = []
 links_table = []
 
+def hop_message(sckt, destination, msg_json):
+    next_hop = '0.0.0.0'
+    for i in routing_table:
+        if i[0] == destination:
+            next_hop = i[1]
+    if next_hop == '0.0.0.0':
+        print('Nao existe rota para o destino: ', destination)
+    else:
+        sckt.sendto(msg_json.encode(), (next_hop, 55151))
+
 def add(ip, weight):
     links_table_has_router = False
     for it in links_table:
@@ -44,8 +54,13 @@ def remove(ip):
     print(distances_table)
     print(links_table)
 
-def trace(ip):
-    pass
+def trace(ip, sckt, local_addr):
+    message = {'type': 'trace',
+    'source': local_addr,
+    'destination': ip,
+    'hops': [local_addr]}
+    msg_json = json.dumps(message)
+    hop_message(sckt, ip, msg_json)
 
 def send_updates(sckt, local_address, period):
     while True:
@@ -58,9 +73,30 @@ def send_updates(sckt, local_address, period):
             'destination': dest_address,
             'distances': distances
             }
+            msg_json = json.dumps(message)
+            hop_message(sckt, dest_address, msg_json)
         time.sleep(period)
 
-def command_line():
+def recv_messages(sckt, local_addr):
+    while True:
+        encoded_msg = sckt.recv(32768)
+        message = json.loads(encoded_msg.decode())
+        if message['type'] == 'data':
+            if message['destination'] == local_addr:
+                print(message['payload'])
+            else:
+                hop_message(sckt, message['destination'], json.dumps(message))
+        elif message['type'] == 'update':
+            pass
+        elif message['type'] == 'trace':
+            message['hops'].append(local_addr)
+            if message['destination'] == local_addr:
+                # manda msg data com as rotas no payload
+                pass
+            else:
+                hop_message(sckt, message['destination'], json.dumps(message))
+
+def command_line(sckt, addr):
     while True:
         try:
             command = input(':> ')
@@ -73,7 +109,7 @@ def command_line():
                 elif words[0] == 'remove':
                     remove(words[1])
                 elif words[0] == 'trace':
-                    trace(words[1])
+                    trace(words[1], sckt, addr)
                 else:
                     print('Comando desconhecido.')
         except EOFError:
@@ -93,9 +129,12 @@ def main():
 
     # faz os updates
     update_task = Process(target=send_updates, args=(sckt, args.addr, args.period))
+    receive_task = Process(target=recv_messages, args=(sckt, args.addr))
     update_task.start()
-    command_line()
+    receive_task.start()
+    command_line(sckt, args.addr)
     update_task.terminate()
+    receive_task.terminate()
 
 if __name__ == '__main__':  
     main()
