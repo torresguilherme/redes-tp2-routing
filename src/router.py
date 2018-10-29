@@ -7,12 +7,42 @@ import time
 # tabela de roteamento
 routing_table = []
 distances_table = []
+links_table = []
 
 def add(ip, weight):
-    pass
+    links_table_has_router = False
+    for it in links_table:
+        if it[0] == ip:
+            links_table_has_router = True
+    if not links_table_has_router:
+        links_table.append([ip, weight])
+
+    if not links_table_has_router:
+        table_has_router = False
+        for i in range (len(distances_table)):
+            if distances_table[i][0] == ip:
+                table_has_router = True
+                if weight < distances_table[i][1]:
+                    distances_table[i][1] = weight
+                    routing_table[i][1] = ip
+        if not table_has_router:
+            distances_table.append([ip, weight])
+            routing_table.append([ip, ip])
+    print(routing_table)
+    print(distances_table)
+    print(links_table)
 
 def remove(ip):
-    pass
+    for i in range(len(links_table)):
+        if links_table[i][0] == ip:
+            del links_table[i]
+    for i in range (len(distances_table)):
+        if distances_table[i][0] == ip:
+            del distances_table[i]
+            del routing_table[i]
+    print(routing_table)
+    print(distances_table)
+    print(links_table)
 
 def trace(ip):
     pass
@@ -33,13 +63,13 @@ def send_updates(sckt, local_address, period):
 def command_line():
     while True:
         try:
-            command = input(':>')
+            command = input(':> ')
             if command == '':
                 return
             else:
                 words = command.split(' ')
                 if words[0] == 'add':
-                    add(words[1], words[2])
+                    add(words[1], int(words[2]))
                 elif words[0] == 'remove':
                     remove(words[1])
                 elif words[0] == 'trace':
