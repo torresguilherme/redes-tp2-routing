@@ -1,6 +1,6 @@
 import argparse
 import socket
-from multiprocessing import Process
+import threading
 import json
 import time
 
@@ -92,7 +92,11 @@ def recv_messages(sckt, local_addr):
             message['hops'].append(local_addr)
             if message['destination'] == local_addr:
                 # manda msg data com as rotas no payload
-                pass
+                data_message = {'type': 'data',
+                'source': local_addr,
+                'destination': message['source'],
+                'payload': message['hops']}
+                hop_message(sckt, message['source'], json.dumps(data_message))
             else:
                 hop_message(sckt, message['destination'], json.dumps(message))
 
@@ -100,7 +104,7 @@ def command_line(sckt, addr):
     while True:
         try:
             command = input(':> ')
-            if command == '':
+            if command == 'quit':
                 return
             else:
                 words = command.split(' ')
@@ -128,13 +132,11 @@ def main():
     sckt.bind((args.addr, 55151))
 
     # faz os updates
-    update_task = Process(target=send_updates, args=(sckt, args.addr, args.period))
-    receive_task = Process(target=recv_messages, args=(sckt, args.addr))
+    update_task = threading.Thread(target=send_updates, args=(sckt, args.addr, args.period), daemon=True)
+    receive_task = threading.Thread(target=recv_messages, args=(sckt, args.addr), daemon=True)
     update_task.start()
     receive_task.start()
     command_line(sckt, args.addr)
-    update_task.terminate()
-    receive_task.terminate()
 
 if __name__ == '__main__':  
     main()
