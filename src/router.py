@@ -19,7 +19,7 @@ def hop_message(sckt, destination, msg_json):
     else:
         sckt.sendto(msg_json.encode(), (next_hop, 55151))
 
-def add(ip, weight):
+def add(ip, weight, learning_addr):
     links_table_has_router = False
     for it in links_table:
         if it[0] == ip:
@@ -29,14 +29,15 @@ def add(ip, weight):
 
     if not links_table_has_router:
         table_has_router = False
-        for i in range (len(distances_table)):
+        for i in range(len(distances_table)):
             if distances_table[i][0] == ip:
                 table_has_router = True
                 if weight < distances_table[i][1]:
                     distances_table[i][1] = weight
+                    distances_table[i][2] = learning_addr
                     routing_table[i][1] = ip
         if not table_has_router:
-            distances_table.append([ip, weight])
+            distances_table.append([ip, weight, learning_addr, 4])
             routing_table.append([ip, ip])
     print(routing_table)
     print(distances_table)
@@ -64,10 +65,18 @@ def trace(ip, sckt, local_addr):
 
 def send_updates(sckt, local_address, period):
     while True:
-        for pair in distances_table:
+        for pair in links_table:
             dest_address = pair[0]
             # pega as distancias p cada roteador conhecido
             distances = {}
+            for it in distances_table:
+                # remocao de rotas desatualizadas
+                it[3] -= 1
+                if it[3] == 0:
+                    remove(it[0])
+                # verifica se a rota nao foi aprendida do destinatario
+                if (it[0] != dest_address and it[2] != dest_address) or dest_address == local_address:
+                    distances[it[0]] = it[1]
             message = {'type': 'update', 
             'source': local_address,
             'destination': dest_address,
@@ -79,15 +88,18 @@ def send_updates(sckt, local_address, period):
 
 def recv_messages(sckt, local_addr):
     while True:
-        encoded_msg = sckt.recv(32768)
+        encoded_msg, sender = sckt.recvfrom(32768)
         message = json.loads(encoded_msg.decode())
         if message['type'] == 'data':
             if message['destination'] == local_addr:
                 print(message['payload'])
             else:
                 hop_message(sckt, message['destination'], json.dumps(message))
+
         elif message['type'] == 'update':
-            pass
+            for key in message['distances'].keys():
+                add(key, message['distances'][key], sender)
+
         elif message['type'] == 'trace':
             message['hops'].append(local_addr)
             if message['destination'] == local_addr:
@@ -109,7 +121,7 @@ def command_line(sckt, addr):
             else:
                 words = command.split(' ')
                 if words[0] == 'add':
-                    add(words[1], int(words[2]))
+                    add(words[1], int(words[2]), addr)
                 elif words[0] == 'remove':
                     remove(words[1])
                 elif words[0] == 'trace':
@@ -130,6 +142,10 @@ def main():
     # bind socket
     sckt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sckt.bind((args.addr, 55151))
+
+    routing_table.append([args.addr, args.addr])
+    distances_table.append([args.addr, 0, '0.0.0.0', 4])
+    links_table.append([args.addr, 0])
 
     # faz os updates
     update_task = threading.Thread(target=send_updates, args=(sckt, args.addr, args.period), daemon=True)

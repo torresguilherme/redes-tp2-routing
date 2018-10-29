@@ -1,8 +1,5 @@
 # TODOS
 - executar startup
-- outra co-rotina
-	- recebe atualizaçoes
-- implementar split horizon
+- resolver o bug da rota para o si proprio que nao atualiza
 - implementar balanceamento de carga
 - reroteamento imediato
-- remocao de rotas desatualizadas
