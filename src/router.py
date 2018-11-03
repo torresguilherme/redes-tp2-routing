@@ -32,9 +32,10 @@ def add(ip, weight, learning_addr):
         for i in range(len(distances_table)):
             if distances_table[i][0] == ip:
                 table_has_router = True
-                if weight < distances_table[i][1]:
+                if weight <= distances_table[i][1]:
                     distances_table[i][1] = weight
                     distances_table[i][2] = learning_addr
+                    distances_table[i][3] = 4
                     routing_table[i][1] = ip
         if not table_has_router:
             distances_table.append([ip, weight, learning_addr, 4])
