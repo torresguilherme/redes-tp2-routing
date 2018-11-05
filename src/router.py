@@ -20,7 +20,6 @@ def hop_message(sckt, destination, msg_json):
         sckt.sendto(msg_json.encode(), (next_hop, 55151))
 
 def add(ip, weight, learning_addr):
-    print(learning_addr)
     links_table_has_router = False
     for it in links_table:
         if it[0] == ip:
@@ -40,9 +39,6 @@ def add(ip, weight, learning_addr):
     if not table_has_router:
         distances_table.append([ip, weight, learning_addr, 4])
         routing_table.append([ip, ip])
-    print(routing_table)
-    print(distances_table)
-    print(links_table)
 
 def remove(ip):
     for i in range(len(links_table)):
@@ -52,9 +48,6 @@ def remove(ip):
         if distances_table[i][0] == ip:
             del distances_table[i]
             del routing_table[i]
-    print(routing_table)
-    print(distances_table)
-    print(links_table)
 
 def trace(ip, sckt, local_addr):
     message = {'type': 'trace',
