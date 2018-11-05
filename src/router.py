@@ -3,8 +3,6 @@ import socket
 import threading
 import json
 import time
-import sys
-import os
 
 # tabela de roteamento
 routing_table = []
@@ -47,8 +45,6 @@ def add(ip, weight, learning_addr):
     if not table_has_router:
         distances_table.append([ip, weight, learning_addr, 4])
         routing_table.append([ip, ip])
-    print(routing_table)
-    print(distances_table)
 
 def remove(ip):
     for i in range(len(links_table)):
