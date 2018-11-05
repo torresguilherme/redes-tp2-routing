@@ -141,12 +141,17 @@ def main():
     distances_table.append([args.addr, 0, '0.0.0.0', 4])
     links_table.append([args.addr, 0])
 
-    # faz os updates
+    # faz os updates, recebe msgs, mostra a linha de comando concorrentemente
     update_task = threading.Thread(target=send_updates, args=(sckt, args.addr, args.period), daemon=True)
     receive_task = threading.Thread(target=recv_messages, args=(sckt, args.addr), daemon=True)
+    command_line_task = threading.Thread(target=command_line, args=(sckt, args.addr))
     update_task.start()
     receive_task.start()
-    command_line(sckt, args.addr)
+    command_line_task.start()
+
+    # recebe o input do startup
+    if args.startup:
+        pass
 
 if __name__ == '__main__':  
     main()
