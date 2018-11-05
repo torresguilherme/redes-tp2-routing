@@ -28,6 +28,7 @@ def add(ip, weight, learning_addr):
     if not links_table_has_router:
         links_table.append([ip, weight])
 
+<<<<<<< HEAD
     table_has_router = False
     for i in range(len(distances_table)):
         if distances_table[i][0] == ip:
@@ -40,6 +41,21 @@ def add(ip, weight, learning_addr):
     if not table_has_router:
         distances_table.append([ip, weight, learning_addr, 4])
         routing_table.append([ip, ip])
+=======
+    if not links_table_has_router:
+        table_has_router = False
+        for i in range(len(distances_table)):
+            if distances_table[i][0] == ip:
+                table_has_router = True
+                if weight <= distances_table[i][1]:
+                    distances_table[i][1] = weight
+                    distances_table[i][2] = learning_addr
+                    distances_table[i][3] = 4
+                    routing_table[i][1] = ip
+        if not table_has_router:
+            distances_table.append([ip, weight, learning_addr, 4])
+            routing_table.append([ip, ip])
+>>>>>>> 6d94f272bbafe196ee7dd0bdca73eb4ef5c568ff
     print(routing_table)
     print(distances_table)
     print(links_table)
