@@ -1,5 +1,3 @@
 # TODOS
-- executar startup
-- resolver bug: pesos estao sendo adicionados sem somar o valor da distancia
 - implementar balanceamento de carga
 - reroteamento imediato

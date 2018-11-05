@@ -3,6 +3,8 @@ import socket
 import threading
 import json
 import time
+import sys
+import os
 
 # tabela de roteamento
 routing_table = []
@@ -19,6 +21,12 @@ def hop_message(sckt, destination, msg_json):
     else:
         sckt.sendto(msg_json.encode(), (next_hop, 55151))
 
+def get_distance_to(addr):
+    for it in distances_table:
+        if it[0] is addr:
+            return it[1]
+    return 0
+
 def add(ip, weight, learning_addr):
     links_table_has_router = False
     for it in links_table:
@@ -31,23 +39,27 @@ def add(ip, weight, learning_addr):
     for i in range(len(distances_table)):
         if distances_table[i][0] == ip:
             table_has_router = True
-            if weight <= distances_table[i][1]:
-                distances_table[i][1] = weight
+            if weight + get_distance_to(learning_addr) <= distances_table[i][1]:
+                distances_table[i][1] = weight + get_distance_to(learning_addr)
                 distances_table[i][2] = learning_addr
                 distances_table[i][3] = 4
                 routing_table[i][1] = ip
     if not table_has_router:
         distances_table.append([ip, weight, learning_addr, 4])
         routing_table.append([ip, ip])
+    print(routing_table)
+    print(distances_table)
 
 def remove(ip):
     for i in range(len(links_table)):
         if links_table[i][0] == ip:
             del links_table[i]
+            break
     for i in range (len(distances_table)):
         if distances_table[i][0] == ip:
             del distances_table[i]
             del routing_table[i]
+            break
 
 def trace(ip, sckt, local_addr):
     message = {'type': 'trace',
@@ -63,14 +75,17 @@ def send_updates(sckt, local_address, period):
             dest_address = pair[0]
             # pega as distancias p cada roteador conhecido
             distances = {}
-            for it in distances_table:
-                # remocao de rotas desatualizadas
-                it[3] -= 1
-                if it[3] == 0:
-                    remove(it[0])
-                # verifica se a rota nao foi aprendida do destinatario
-                if (it[0] != dest_address and it[2] != dest_address) or dest_address == local_address:
-                    distances[it[0]] = it[1]
+            if dest_address == local_address:
+                distances = {local_address: 0}
+            else:
+                for it in distances_table:
+                    # remocao de rotas desatualizadas
+                    it[3] -= 1
+                    if it[3] == 0:
+                        remove(it[0])
+                    # verifica se a rota nao foi aprendida do destinatario
+                    if it[0] != dest_address and it[2] != dest_address:
+                        distances[it[0]] = it[1]
             message = {'type': 'update', 
             'source': local_address,
             'destination': dest_address,
@@ -106,22 +121,25 @@ def recv_messages(sckt, local_addr):
             else:
                 hop_message(sckt, message['destination'], json.dumps(message))
 
+def execute_command(command, sckt, addr):
+    if command == 'quit':
+        return
+    else:
+        words = command.split(' ')
+        if words[0] == 'add':
+            add(words[1], int(words[2]), addr)
+        elif words[0] == 'remove':
+            remove(words[1])
+        elif words[0] == 'trace':
+            trace(words[1], sckt, addr)
+        else:
+            print('Comando desconhecido.')
+
 def command_line(sckt, addr):
     while True:
         try:
             command = input(':> ')
-            if command == 'quit':
-                return
-            else:
-                words = command.split(' ')
-                if words[0] == 'add':
-                    add(words[1], int(words[2]), addr)
-                elif words[0] == 'remove':
-                    remove(words[1])
-                elif words[0] == 'trace':
-                    trace(words[1], sckt, addr)
-                else:
-                    print('Comando desconhecido.')
+            execute_command(command, sckt, addr)
         except EOFError:
             print('Execucao terminada.')
             return
@@ -151,7 +169,10 @@ def main():
 
     # recebe o input do startup
     if args.startup:
-        pass
+        with open(args.startup, 'r') as f:
+            for line in f.readlines():
+                execute_command(line, sckt, args.addr)
+                
 
 if __name__ == '__main__':  
     main()
