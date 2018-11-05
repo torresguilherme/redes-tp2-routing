@@ -1,5 +1,5 @@
 # TODOS
 - executar startup
-- resolver o bug da rota para o si proprio que nao atualiza
+- resolver bug: pesos estao sendo adicionados sem somar o valor da distancia
 - implementar balanceamento de carga
 - reroteamento imediato

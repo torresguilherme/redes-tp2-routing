@@ -20,6 +20,7 @@ def hop_message(sckt, destination, msg_json):
         sckt.sendto(msg_json.encode(), (next_hop, 55151))
 
 def add(ip, weight, learning_addr):
+    print(learning_addr)
     links_table_has_router = False
     for it in links_table:
         if it[0] == ip:
@@ -27,18 +28,18 @@ def add(ip, weight, learning_addr):
     if not links_table_has_router:
         links_table.append([ip, weight])
 
-    if not links_table_has_router:
-        table_has_router = False
-        for i in range(len(distances_table)):
-            if distances_table[i][0] == ip:
-                table_has_router = True
-                if weight < distances_table[i][1]:
-                    distances_table[i][1] = weight
-                    distances_table[i][2] = learning_addr
-                    routing_table[i][1] = ip
-        if not table_has_router:
-            distances_table.append([ip, weight, learning_addr, 4])
-            routing_table.append([ip, ip])
+    table_has_router = False
+    for i in range(len(distances_table)):
+        if distances_table[i][0] == ip:
+            table_has_router = True
+            if weight <= distances_table[i][1]:
+                distances_table[i][1] = weight
+                distances_table[i][2] = learning_addr
+                distances_table[i][3] = 4
+                routing_table[i][1] = ip
+    if not table_has_router:
+        distances_table.append([ip, weight, learning_addr, 4])
+        routing_table.append([ip, ip])
     print(routing_table)
     print(distances_table)
     print(links_table)
@@ -98,7 +99,7 @@ def recv_messages(sckt, local_addr):
 
         elif message['type'] == 'update':
             for key in message['distances'].keys():
-                add(key, message['distances'][key], sender)
+                add(key, message['distances'][key], sender[0])
 
         elif message['type'] == 'trace':
             message['hops'].append(local_addr)
